@@ -1,5 +1,4 @@
 from flask import Flask, render_template, jsonify
-from flask import send_from_directory
 import requests
 import random
 import string
@@ -81,10 +80,6 @@ def get_email():
 def inbox(token):
     msgs = get_messages(token)
     return jsonify(msgs)
-
-@app.route('/ads.txt')
-def ads_txt():
-    return send_from_directory('.', 'ads.txt')
 
 
 if __name__ == "__main__":
