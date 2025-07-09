@@ -80,6 +80,12 @@ def get_email():
 def inbox(token):
     msgs = get_messages(token)
     return jsonify(msgs)
+from flask import send_from_directory
+
+@app.route('/ads.txt')
+def ads_txt():
+    return send_from_directory('.', 'ads.txt')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
