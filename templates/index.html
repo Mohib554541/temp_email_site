@@ -15,7 +15,9 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      
     }
+    
     .msg-card {
       border: 1px solid #ddd;
       padding: 10px;
@@ -33,7 +35,9 @@
     </div>
     <div class="text-center">
       <p><strong>Email:</strong> <span id="email"></span></p>
-      <button class="btn btn-outline-secondary" onclick="copyEmail()">Copy Email</button>
+<p><strong>Expires in:</strong> <span id="timer">--:--</span></p>
+<button class="btn btn-outline-secondary" onclick="copyEmail()">Copy Email</button>
+
     </div>
     <hr />
     <h5>Inbox</h5>
@@ -41,59 +45,43 @@
   </div>
 
   <script>
-    let currentEmail = "";
-    let currentToken = "";
+  let currentEmail = "";
+  let currentToken = "";
+  let countdownInterval;
 
-    function generateEmail() {
-      fetch("/get_email")
-        .then(res => res.json())
-        .then(data => {
-          currentEmail = data.email;
-          currentToken = data.token;
-          document.getElementById("email").innerText = currentEmail;
-          loadInbox();
-        });
-    }
-
-    function copyEmail() {
-      if (!currentEmail) return alert("Generate an email first!");
-      navigator.clipboard.writeText(currentEmail).then(() => {
-        alert("Copied!");
-      });
-    }
-
-    function loadInbox() {
-      if (!currentToken) return;
-      fetch(`/inbox/${currentToken}`)
-        .then(res => res.json())
-        .then(data => {
-          const inbox = document.getElementById("inbox");
-          inbox.innerHTML = "";
-
-          if (data.length === 0) {
-            inbox.innerHTML = "<p>No messages yet. Keep this page open.</p>";
-            return;
-          }
-
-          data.forEach(msg => {
-            const div = document.createElement("div");
-            div.classList.add("msg-card");
-            div.innerHTML = `
-              <strong>From:</strong> ${msg.from.name} (${msg.from.address})<br>
-              <strong>Subject:</strong> ${msg.subject}<br>
-              <strong>Intro:</strong> ${msg.intro}
-            `;
-            inbox.appendChild(div);
-          });
-        });
-    }
-
-    // Auto refresh inbox every 20 seconds
-    setInterval(() => {
-      if (currentToken) {
+  function generateEmail() {
+    fetch("/get_email")
+      .then(res => res.json())
+      .then(data => {
+        currentEmail = data.email;
+        currentToken = data.token;
+        document.getElementById("email").innerText = currentEmail;
+        startCountdown(10 * 60); // 10 minutes
         loadInbox();
+      });
+  }
+
+  function startCountdown(seconds) {
+    clearInterval(countdownInterval);
+    const timerDisplay = document.getElementById("timer");
+
+    countdownInterval = setInterval(() => {
+      let minutes = Math.floor(seconds / 60);
+      let secs = seconds % 60;
+      timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+      if (seconds <= 0) {
+        clearInterval(countdownInterval);
+        timerDisplay.innerText = "Expired";
+        document.getElementById("email").innerText = "Expired";
+        currentEmail = "";
+        currentToken = "";
       }
-    }, 20000);
-  </script>
+
+      seconds--;
+    }, 1000);
+  }
+</script>
+
 </body>
 </html>
