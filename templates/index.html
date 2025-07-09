@@ -15,9 +15,7 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      
     }
-    
     .msg-card {
       border: 1px solid #ddd;
       padding: 10px;
@@ -35,9 +33,8 @@
     </div>
     <div class="text-center">
       <p><strong>Email:</strong> <span id="email"></span></p>
-<p><strong>Expires in:</strong> <span id="timer">--:--</span></p>
-<button class="btn btn-outline-secondary" onclick="copyEmail()">Copy Email</button>
-
+      <p><strong>Expires in:</strong> <span id="timer">--:--</span></p>
+      <button class="btn btn-outline-secondary" onclick="copyEmail()">Copy Email</button>
     </div>
     <hr />
     <h5>Inbox</h5>
@@ -45,43 +42,72 @@
   </div>
 
   <script>
-  let currentEmail = "";
-  let currentToken = "";
-  let countdownInterval;
+    let currentEmail = "";
+    let currentToken = "";
+    let countdownInterval;
 
-  function generateEmail() {
-    fetch("/get_email")
-      .then(res => res.json())
-      .then(data => {
-        currentEmail = data.email;
-        currentToken = data.token;
-        document.getElementById("email").innerText = currentEmail;
-        startCountdown(10 * 60); // 10 minutes
-        loadInbox();
+    function generateEmail() {
+      fetch("/get_email")
+        .then(res => res.json())
+        .then(data => {
+          currentEmail = data.email;
+          currentToken = data.token;
+          document.getElementById("email").innerText = currentEmail;
+          startCountdown(10 * 60); // 10 minutes
+          loadInbox();
+        });
+    }
+
+    function startCountdown(seconds) {
+      clearInterval(countdownInterval);
+      const timerDisplay = document.getElementById("timer");
+
+      countdownInterval = setInterval(() => {
+        let minutes = Math.floor(seconds / 60);
+        let secs = seconds % 60;
+        timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (seconds <= 0) {
+          clearInterval(countdownInterval);
+          timerDisplay.innerText = "Expired";
+          document.getElementById("email").innerText = "Expired";
+          currentEmail = "";
+          currentToken = "";
+        }
+
+        seconds--;
+      }, 1000);
+    }
+
+    function copyEmail() {
+      if (!currentEmail) return;
+      navigator.clipboard.writeText(currentEmail).then(() => {
+        alert("Email copied to clipboard!");
       });
-  }
+    }
 
-  function startCountdown(seconds) {
-    clearInterval(countdownInterval);
-    const timerDisplay = document.getElementById("timer");
+    function loadInbox() {
+      if (!currentToken) return;
 
-    countdownInterval = setInterval(() => {
-      let minutes = Math.floor(seconds / 60);
-      let secs = seconds % 60;
-      timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      fetch("/get_messages?token=" + currentToken)
+        .then(res => res.json())
+        .then(data => {
+          const inbox = document.getElementById("inbox");
+          inbox.innerHTML = "";
 
-      if (seconds <= 0) {
-        clearInterval(countdownInterval);
-        timerDisplay.innerText = "Expired";
-        document.getElementById("email").innerText = "Expired";
-        currentEmail = "";
-        currentToken = "";
-      }
+          if (!data.length) {
+            inbox.innerHTML = "<p>No messages yet.</p>";
+            return;
+          }
 
-      seconds--;
-    }, 1000);
-  }
-</script>
-
+          data.forEach(msg => {
+            const card = document.createElement("div");
+            card.className = "msg-card";
+            card.innerHTML = `<strong>From:</strong> ${msg.from.address}<br><strong>Subject:</strong> ${msg.subject}`;
+            inbox.appendChild(card);
+          });
+        });
+    }
+  </script>
 </body>
 </html>
